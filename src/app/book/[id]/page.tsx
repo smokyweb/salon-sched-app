@@ -211,6 +211,4 @@ export default function BookingPage({ params }: { params: { id: string } }) {
   )
 }
 
-export async function generateStaticParams() {
-  return PROFESSIONALS.map(p => ({ id: p.id }))
-}
+
