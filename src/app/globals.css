@@ -1,0 +1,72 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #ec4899 100%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: #0f0f1a;
+  color: white;
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #1a1a2e; }
+::-webkit-scrollbar-thumb { background: #4c4c8a; border-radius: 3px; }
+
+/* Gradient text utility */
+.gradient-text {
+  background: var(--brand-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glass card */
+.glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Brand button */
+.btn-brand {
+  background: var(--brand-gradient);
+  color: white;
+  font-weight: 600;
+  border-radius: 12px;
+  padding: 12px 24px;
+  transition: all 0.2s;
+  cursor: pointer;
+  border: none;
+}
+.btn-brand:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 30px rgba(236, 72, 153, 0.4);
+}
+
+/* Pulsing AI indicator */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 10px rgba(236, 72, 153, 0.4); }
+  50% { box-shadow: 0 0 30px rgba(236, 72, 153, 0.8); }
+}
+.ai-pulse {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Star rating */
+.star { color: #f59e0b; }
