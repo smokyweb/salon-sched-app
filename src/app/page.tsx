@@ -1,10 +1,9 @@
 import Navbar from '../components/Navbar'
 import AIVoiceWidget from '../components/AIVoiceWidget'
-import ProfessionalCard from '../components/ProfessionalCard'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Search, MapPin, Star, Phone, Calendar, CreditCard, Zap, Shield, Users, TrendingUp, ChevronRight, Play, CheckCircle } from 'lucide-react'
-import { PROFESSIONALS, SERVICES, STATS, TESTIMONIALS } from '../lib/data'
+import { SERVICES, STATS, TESTIMONIALS } from '../lib/data'
 
 export default function HomePage() {
   return (
@@ -178,22 +177,23 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ===== FEATURED PROFESSIONALS ===== */}
+      {/* ===== FEATURED PROFESSIONALS CTA ===== */}
       <section className="py-8 px-4 max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-white">Top Professionals Near You</h2>
-            <p className="text-slate-400 text-sm mt-1">Arlington, TX · Available today</p>
+            <h2 className="text-2xl font-bold text-white">Find a Professional</h2>
+            <p className="text-slate-400 text-sm mt-1">Browse verified beauty & wellness professionals near you</p>
           </div>
           <Link href="/marketplace" className="text-pink-400 hover:text-pink-300 text-sm flex items-center gap-1">
-            View all <ChevronRight size={14} />
+            Browse all <ChevronRight size={14} />
           </Link>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {PROFESSIONALS.map(pro => (
-            <ProfessionalCard key={pro.id} pro={pro} />
-          ))}
-        </div>
+        <Link href="/marketplace" className="block rounded-2xl border border-white/10 p-8 text-center hover:border-white/20 transition-all glass">
+          <Users size={36} className="mx-auto mb-3 text-slate-500" />
+          <p className="text-white font-semibold mb-1">Explore the Marketplace</p>
+          <p className="text-slate-400 text-sm">Discover professionals, browse services, and book your next appointment.</p>
+          <span className="inline-block mt-4 px-5 py-2 rounded-xl text-sm font-medium text-white" style={{ background: 'linear-gradient(135deg,#667eea,#ec4899)' }}>Browse Professionals →</span>
+        </Link>
       </section>
 
       {/* ===== AI VOICE FEATURE ===== */}
