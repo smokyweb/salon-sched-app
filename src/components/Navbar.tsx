@@ -2,10 +2,14 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Menu, X, ChevronDown } from 'lucide-react'
+import { Menu, X, ChevronDown, ShieldAlert } from 'lucide-react'
+import { useSession } from 'next-auth/react'
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false)
+  const { data: session } = useSession()
+  const isAdmin = (session?.user as any)?.role === 'ADMIN'
+  const isPro = (session?.user as any)?.role === 'PRO'
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 glass border-b border-white/10">
@@ -33,12 +37,36 @@ export default function Navbar() {
             </div>
           </div>
           <Link href="/ai-voice" className="text-slate-300 hover:text-white transition-colors">AI Voice</Link>
+
+          {/* Admin link — only visible to ADMIN users */}
+          {isAdmin && (
+            <Link href="/admin"
+              className="flex items-center gap-1.5 text-red-400 hover:text-red-300 transition-colors font-medium">
+              <ShieldAlert size={14} />
+              Admin
+            </Link>
+          )}
         </div>
 
         {/* Actions */}
         <div className="hidden md:flex items-center gap-3">
-          <Link href="/login" className="text-slate-300 hover:text-white text-sm transition-colors px-4 py-2">Sign In</Link>
-          <Link href="/signup" className="btn-brand text-sm px-5 py-2">Get Started Free</Link>
+          {session ? (
+            isPro || isAdmin ? (
+              <Link href={isAdmin ? '/admin' : '/pro/dashboard'}
+                className="text-slate-300 hover:text-white text-sm transition-colors px-4 py-2">
+                Dashboard
+              </Link>
+            ) : (
+              <Link href="/marketplace" className="text-slate-300 hover:text-white text-sm transition-colors px-4 py-2">
+                Browse
+              </Link>
+            )
+          ) : (
+            <Link href="/login" className="text-slate-300 hover:text-white text-sm transition-colors px-4 py-2">Sign In</Link>
+          )}
+          {!session && (
+            <Link href="/signup" className="btn-brand text-sm px-5 py-2">Get Started Free</Link>
+          )}
         </div>
 
         {/* Mobile menu toggle */}
@@ -54,9 +82,23 @@ export default function Navbar() {
           <Link href="/marketplace" className="block text-slate-300 hover:text-white py-2 text-sm" onClick={() => setMenuOpen(false)}>Marketplace</Link>
           <Link href="/ai-voice" className="block text-slate-300 hover:text-white py-2 text-sm" onClick={() => setMenuOpen(false)}>AI Voice</Link>
           <Link href="/pricing" className="block text-slate-300 hover:text-white py-2 text-sm" onClick={() => setMenuOpen(false)}>Pricing</Link>
+          {isAdmin && (
+            <Link href="/admin" className="block text-red-400 hover:text-red-300 py-2 text-sm flex items-center gap-1.5" onClick={() => setMenuOpen(false)}>
+              <ShieldAlert size={14} /> Admin Panel
+            </Link>
+          )}
           <div className="pt-2 flex flex-col gap-2">
-            <Link href="/login" className="text-center py-2.5 border border-white/20 rounded-xl text-white text-sm" onClick={() => setMenuOpen(false)}>Sign In</Link>
-            <Link href="/signup" className="btn-brand text-center text-sm" onClick={() => setMenuOpen(false)}>Get Started Free</Link>
+            {session ? (
+              <Link href={isAdmin ? '/admin' : isPro ? '/pro/dashboard' : '/marketplace'}
+                className="text-center py-2.5 border border-white/20 rounded-xl text-white text-sm" onClick={() => setMenuOpen(false)}>
+                Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link href="/login" className="text-center py-2.5 border border-white/20 rounded-xl text-white text-sm" onClick={() => setMenuOpen(false)}>Sign In</Link>
+                <Link href="/signup" className="btn-brand text-center text-sm" onClick={() => setMenuOpen(false)}>Get Started Free</Link>
+              </>
+            )}
           </div>
         </div>
       )}
