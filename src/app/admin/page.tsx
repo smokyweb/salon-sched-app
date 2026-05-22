@@ -5,16 +5,18 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import {
   Users, Briefcase, Calendar, Wrench, Trash2, Edit2, Plus,
-  X, Check, RefreshCw, ShieldAlert, ChevronDown, ChevronUp, Search
+  X, Check, RefreshCw, ShieldAlert, ChevronDown, ChevronUp, Search,
+  Upload, Download, AlertCircle, CheckCircle2
 } from 'lucide-react'
 
-type Tab = 'users' | 'profiles' | 'bookings' | 'services'
+type Tab = 'users' | 'profiles' | 'bookings' | 'services' | 'bulk'
 
 const TABS: { id: Tab; label: string; icon: any }[] = [
   { id: 'users', label: 'Users', icon: Users },
   { id: 'profiles', label: 'Pro Profiles', icon: Briefcase },
   { id: 'bookings', label: 'Bookings', icon: Calendar },
   { id: 'services', label: 'Services', icon: Wrench },
+  { id: 'bulk', label: 'Bulk Import', icon: Upload },
 ]
 
 function Modal({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
@@ -610,6 +612,261 @@ function ServicesTab() {
   )
 }
 
+// ── BULK IMPORT TAB ──────────────────────────────────────────
+const CSV_TEMPLATE = `email,name,role,password,businessName,specialty,location
+jane@example.com,Jane Smith,CUSTOMER,MyPass123,,, 
+studio@example.com,Glow Studio,PRO,MyPass123,Glow Studio,Hair,New York
+`
+
+type ParsedUser = { email: string; name: string; role: string; password: string; businessName: string; specialty: string; location: string; _error?: string }
+
+function BulkImportTab() {
+  const [csvText, setCsvText] = useState('')
+  const [parsed, setParsed] = useState<ParsedUser[]>([])
+  const [parseError, setParseError] = useState('')
+  const [importing, setImporting] = useState(false)
+  const [result, setResult] = useState<{ created: number; skipped: number; errors: string[] } | null>(null)
+  const [dragOver, setDragOver] = useState(false)
+
+  const parseCSV = (text: string) => {
+    setParseError('')
+    setResult(null)
+    const lines = text.trim().split('\n').filter(l => l.trim())
+    if (lines.length < 2) { setParseError('CSV must have a header row and at least one data row'); setParsed([]); return }
+
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase())
+    const emailIdx = headers.indexOf('email')
+    if (emailIdx === -1) { setParseError('CSV must have an "email" column'); setParsed([]); return }
+
+    const nameIdx = headers.indexOf('name')
+    const roleIdx = headers.indexOf('role')
+    const passIdx = headers.indexOf('password')
+    const bizIdx = headers.indexOf('businessname')
+    const specIdx = headers.indexOf('specialty')
+    const locIdx = headers.indexOf('location')
+
+    const rows: ParsedUser[] = []
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split(',').map(c => c.trim())
+      const email = cols[emailIdx] || ''
+      const role = cols[roleIdx]?.toUpperCase() || 'CUSTOMER'
+      const _error = !email.includes('@') ? 'Invalid email' :
+        !['CUSTOMER', 'PRO', 'ADMIN'].includes(role) ? `Invalid role "${role}"` : ''
+      rows.push({
+        email,
+        name: nameIdx >= 0 ? cols[nameIdx] || '' : '',
+        role: ['CUSTOMER', 'PRO', 'ADMIN'].includes(role) ? role : 'CUSTOMER',
+        password: passIdx >= 0 ? cols[passIdx] || '' : '',
+        businessName: bizIdx >= 0 ? cols[bizIdx] || '' : '',
+        specialty: specIdx >= 0 ? cols[specIdx] || '' : '',
+        location: locIdx >= 0 ? cols[locIdx] || '' : '',
+        _error,
+      })
+    }
+    setParsed(rows)
+  }
+
+  const handleFile = (file: File) => {
+    if (!file.name.endsWith('.csv') && file.type !== 'text/csv') {
+      setParseError('Please upload a .csv file'); return
+    }
+    const reader = new FileReader()
+    reader.onload = e => {
+      const text = e.target?.result as string
+      setCsvText(text)
+      parseCSV(text)
+    }
+    reader.readAsText(file)
+  }
+
+  const importUsers = async () => {
+    const valid = parsed.filter(r => !r._error)
+    if (!valid.length) return
+    setImporting(true)
+    setResult(null)
+    try {
+      const res = await fetch('/api/admin/users/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ users: valid }),
+      })
+      const data = await res.json()
+      setResult(data)
+      if (data.created > 0) { setCsvText(''); setParsed([]) }
+    } catch (e) {
+      setResult({ created: 0, skipped: 0, errors: ['Network error — please try again'] })
+    } finally {
+      setImporting(false)
+    }
+  }
+
+  const downloadTemplate = () => {
+    const blob = new Blob([CSV_TEMPLATE], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a'); a.href = url; a.download = 'glowly-users-template.csv'; a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const validCount = parsed.filter(r => !r._error).length
+  const errorCount = parsed.filter(r => r._error).length
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h2 className="text-white font-bold text-lg">Bulk User Import</h2>
+          <p className="text-gray-500 text-sm mt-0.5">Upload a CSV to create hundreds of users at once. Max 500 per batch.</p>
+        </div>
+        <button onClick={downloadTemplate}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl border border-white/10 text-gray-300 text-sm hover:text-white hover:border-white/20 transition">
+          <Download size={14} /> Download Template
+        </button>
+      </div>
+
+      {/* Format guide */}
+      <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
+        <p className="text-blue-300 text-sm font-medium mb-2">📋 CSV Format</p>
+        <div className="font-mono text-xs text-blue-200/70 space-y-0.5">
+          <p>Required: <span className="text-white">email</span></p>
+          <p>Optional: <span className="text-white">name, role (CUSTOMER/PRO/ADMIN), password, businessName, specialty, location</span></p>
+          <p className="text-blue-300/50 mt-1">• Existing emails are skipped (no overwrite)</p>
+          <p className="text-blue-300/50">• Default role: CUSTOMER · Default password: Glowly2026!</p>
+          <p className="text-blue-300/50">• PRO users get a ProProfile auto-created</p>
+        </div>
+      </div>
+
+      {/* Drop zone */}
+      <div
+        onDragOver={e => { e.preventDefault(); setDragOver(true) }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={e => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) handleFile(f) }}
+        className={`relative border-2 border-dashed rounded-2xl p-8 text-center transition-colors ${dragOver ? 'border-purple-500 bg-purple-500/10' : 'border-white/15 hover:border-white/25'}`}>
+        <Upload size={28} className="mx-auto mb-3 text-gray-500" />
+        <p className="text-white font-medium mb-1">Drop your CSV file here</p>
+        <p className="text-gray-500 text-sm mb-4">or click to browse</p>
+        <input type="file" accept=".csv,text/csv" className="absolute inset-0 opacity-0 cursor-pointer"
+          onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f) }} />
+        <button className="px-4 py-2 rounded-xl border border-white/10 text-gray-300 text-sm hover:text-white transition pointer-events-none">
+          Choose File
+        </button>
+      </div>
+
+      {/* Or paste CSV */}
+      <div>
+        <label className="block text-sm text-gray-400 mb-2">Or paste CSV text directly</label>
+        <textarea
+          value={csvText}
+          onChange={e => { setCsvText(e.target.value); if (e.target.value) parseCSV(e.target.value) }}
+          placeholder="email,name,role\njane@example.com,Jane,CUSTOMER"
+          rows={5}
+          className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white font-mono text-xs placeholder-gray-600 focus:outline-none focus:border-purple-500 resize-none"
+        />
+        {csvText && (
+          <button onClick={() => parseCSV(csvText)}
+            className="mt-2 px-3 py-1.5 rounded-lg border border-white/10 text-gray-400 text-sm hover:text-white transition flex items-center gap-1.5">
+            <RefreshCw size={13} /> Parse
+          </button>
+        )}
+      </div>
+
+      {parseError && (
+        <div className="flex items-start gap-3 rounded-xl border border-red-500/20 bg-red-500/5 p-4">
+          <AlertCircle size={16} className="text-red-400 flex-shrink-0 mt-0.5" />
+          <p className="text-red-300 text-sm">{parseError}</p>
+        </div>
+      )}
+
+      {/* Preview table */}
+      {parsed.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+            <div className="flex items-center gap-3">
+              <span className="text-white font-medium">{parsed.length} rows parsed</span>
+              {validCount > 0 && <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">{validCount} valid</span>}
+              {errorCount > 0 && <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 border border-red-500/20">{errorCount} errors</span>}
+            </div>
+            <button
+              onClick={importUsers}
+              disabled={importing || validCount === 0}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-white font-medium text-sm disabled:opacity-40 transition"
+              style={{ background: 'linear-gradient(135deg,#667eea,#ec4899)' }}>
+              {importing
+                ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Importing...</>
+                : <><Upload size={14} /> Import {validCount} Users</>}
+            </button>
+          </div>
+
+          <div className="overflow-x-auto rounded-xl border border-white/10 max-h-80 overflow-y-auto">
+            <table className="w-full text-xs">
+              <thead className="sticky top-0" style={{ background: '#1a1a2e' }}>
+                <tr className="border-b border-white/10 text-gray-400">
+                  <th className="text-left px-3 py-2.5 font-medium w-8">#</th>
+                  <th className="text-left px-3 py-2.5 font-medium">Email</th>
+                  <th className="text-left px-3 py-2.5 font-medium">Name</th>
+                  <th className="text-left px-3 py-2.5 font-medium">Role</th>
+                  <th className="text-left px-3 py-2.5 font-medium">Business</th>
+                  <th className="text-left px-3 py-2.5 font-medium">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {parsed.map((row, i) => (
+                  <tr key={i} className={`${row._error ? 'bg-red-500/5' : 'hover:bg-white/3'} transition-colors`}>
+                    <td className="px-3 py-2 text-gray-600">{i + 1}</td>
+                    <td className="px-3 py-2 text-white font-mono">{row.email}</td>
+                    <td className="px-3 py-2 text-gray-300">{row.name || '—'}</td>
+                    <td className="px-3 py-2">
+                      <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                        row.role === 'ADMIN' ? 'bg-red-500/15 text-red-400' :
+                        row.role === 'PRO' ? 'bg-purple-500/15 text-purple-400' :
+                        'bg-blue-500/15 text-blue-400'
+                      }`}>{row.role}</span>
+                    </td>
+                    <td className="px-3 py-2 text-gray-400">{row.businessName || '—'}</td>
+                    <td className="px-3 py-2">
+                      {row._error
+                        ? <span className="flex items-center gap-1 text-red-400"><AlertCircle size={11} /> {row._error}</span>
+                        : <span className="flex items-center gap-1 text-emerald-400"><CheckCircle2 size={11} /> Ready</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Result */}
+      {result && (
+        <div className={`rounded-xl border p-5 ${
+          result.errors.length === 0
+            ? 'border-emerald-500/20 bg-emerald-500/5'
+            : 'border-amber-500/20 bg-amber-500/5'
+        }`}>
+          <div className="flex items-center gap-2 mb-2">
+            <CheckCircle2 size={16} className={result.errors.length === 0 ? 'text-emerald-400' : 'text-amber-400'} />
+            <span className={`font-medium text-sm ${result.errors.length === 0 ? 'text-emerald-300' : 'text-amber-300'}`}>
+              Import complete
+            </span>
+          </div>
+          <div className="flex gap-5 text-sm mb-3">
+            <span className="text-emerald-400">✓ {result.created} created</span>
+            {result.skipped > 0 && <span className="text-gray-400">⤹ {result.skipped} skipped (already exist)</span>}
+          </div>
+          {result.errors.length > 0 && (
+            <div className="space-y-1 mt-2">
+              <p className="text-amber-400 text-xs font-medium">Row errors:</p>
+              {result.errors.map((e, i) => (
+                <p key={i} className="text-amber-300/70 text-xs font-mono">{e}</p>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── MAIN ADMIN PAGE ────────────────────────────────────────────
 export default function AdminPage() {
   const { data: session, status } = useSession()
@@ -668,6 +925,7 @@ export default function AdminPage() {
         {tab === 'profiles' && <ProfilesTab />}
         {tab === 'bookings' && <BookingsTab />}
         {tab === 'services' && <ServicesTab />}
+        {tab === 'bulk' && <BulkImportTab />}
       </div>
     </div>
   )
