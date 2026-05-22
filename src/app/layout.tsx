@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import { Providers } from './providers'
 
 export const metadata: Metadata = {
   title: 'Glowly — AI Booking for Beauty & Wellness',
@@ -19,7 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="icon" href="/logo.png" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
-      <body className="bg-dark min-h-screen antialiased">{children}</body>
+      <body className="bg-dark min-h-screen antialiased"><Providers>{children}</Providers></body>
     </html>
   )
 }
