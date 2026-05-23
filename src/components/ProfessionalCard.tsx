@@ -17,14 +17,14 @@ type Professional = {
   user: { name: string | null; email: string }
 }
 
-// Logo-derived gradients: blue → purple → magenta
+// Kanchi Cafe palette — cycling card header gradients
 const COVER_GRADIENTS = [
-  { from: '#0E1B45', to: '#4B2D7F' },   // navy → purple
-  { from: '#1A6FD4', to: '#4B2D7F' },   // royal blue → purple
-  { from: '#4B2D7F', to: '#E83592' },   // purple → magenta
-  { from: '#1A6FD4', to: '#E83592' },   // blue → magenta (full span)
-  { from: '#0E1B45', to: '#5C1A5E' },   // navy → plum
-  { from: '#5C1A5E', to: '#E83592' },   // plum → magenta
+  { from: '#1A2244', to: '#1E5FAE' },   // navy → royal blue (peacock)
+  { from: '#1A2244', to: '#0E7A8C' },   // navy → peacock teal
+  { from: '#1E2A50', to: '#2878CC' },   // deep navy → bright blue
+  { from: '#1A2244', to: '#4A3010' },   // navy → dark amber
+  { from: '#0D1B35', to: '#1E5FAE' },   // darkest navy → royal blue
+  { from: '#1A2244', to: '#2C6B3A' },   // navy → forest green
 ]
 
 function getCoverGradient(id: string) {
@@ -45,98 +45,120 @@ export default function ProfessionalCard({ pro }: { pro: Professional }) {
 
   return (
     <Link href={`/pro/${pro.id}`} className="block group">
-      <div className="rounded-2xl overflow-hidden border border-white/10 hover:border-white/20 transition-all duration-200 hover:-translate-y-1 hover:shadow-xl"
-        style={{ background: '#0E1B45', boxShadow: '0 4px 24px rgba(0,0,0,0.4)' }}>
+      <div
+        className="rounded-2xl overflow-hidden transition-all duration-200 hover:-translate-y-1"
+        style={{
+          background: '#0F1628',
+          border: '1px solid rgba(212,168,67,0.15)',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
+        }}>
 
-        {/* Cover gradient banner */}
+        {/* Cover banner */}
         <div className="h-28 relative flex items-center justify-center"
           style={{ background: `linear-gradient(135deg, ${grad.from}, ${grad.to})` }}>
 
-          {/* Avatar circle */}
-          <div className="w-16 h-16 rounded-full border-2 border-white/25 shadow-lg flex items-center justify-center overflow-hidden"
-            style={{ background: 'rgba(0,0,0,0.35)' }}>
+          {/* Gold shimmer line at bottom */}
+          <div className="absolute bottom-0 left-0 right-0 h-px"
+            style={{ background: 'linear-gradient(90deg, transparent, #D4A843, transparent)' }} />
+
+          {/* Avatar */}
+          <div className="w-16 h-16 rounded-full border-2 shadow-lg flex items-center justify-center overflow-hidden"
+            style={{ background: 'rgba(26,34,68,0.7)', borderColor: 'rgba(212,168,67,0.4)' }}>
             {pro.avatar ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={pro.avatar} alt={pro.businessName} className="w-full h-full object-cover" />
             ) : (
-              <span className="text-white font-bold text-lg">{getInitials(pro.businessName, pro.user.email)}</span>
+              <span className="font-bold text-lg" style={{ color: '#D4A843' }}>
+                {getInitials(pro.businessName, pro.user.email)}
+              </span>
             )}
           </div>
 
-          {/* Verified badge */}
+          {/* Verified */}
           {pro.isVerified && (
-            <div className="absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center"
-              style={{ background: 'rgba(26,111,212,0.3)', border: '1px solid rgba(26,111,212,0.5)' }}>
-              <CheckCircle size={14} className="text-blue-300" />
+            <div className="absolute top-3 right-3">
+              <CheckCircle size={16} style={{ color: '#D4A843' }} />
             </div>
           )}
 
-          {/* Elite badge */}
+          {/* Elite */}
           {pro.planTier === 'elite' && (
             <div className="absolute top-3 left-3 text-xs font-semibold px-2 py-0.5 rounded-full"
-              style={{ background: 'rgba(232,53,146,0.25)', border: '1px solid rgba(232,53,146,0.5)', color: '#F25CA2' }}>
+              style={{ background: 'rgba(212,168,67,0.2)', border: '1px solid rgba(212,168,67,0.5)', color: '#E0BC5E' }}>
               Elite
             </div>
           )}
         </div>
 
-        {/* Card body */}
+        {/* Body */}
         <div className="p-4">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <h3 className="font-bold text-white text-sm leading-tight truncate">{pro.businessName}</h3>
-              <p className="text-sm mt-0.5 truncate" style={{ color: '#7BA3D8' }}>
+              <h3 className="font-bold text-sm leading-tight truncate" style={{ color: '#F0E8D8' }}>
+                {pro.businessName}
+              </h3>
+              <p className="text-xs mt-0.5 truncate" style={{ color: '#7A9BC4' }}>
                 {pro.specialty || 'Beauty & Wellness'}
               </p>
             </div>
             <div className="text-right flex-shrink-0">
               {minPrice !== null && (
-                <p className="text-white text-sm font-semibold">from ${minPrice}</p>
+                <p className="text-sm font-semibold" style={{ color: '#D4A843' }}>
+                  from ${minPrice}
+                </p>
               )}
               {pro.reviewCount > 0 && (
                 <div className="flex items-center gap-1 justify-end mt-0.5">
-                  <Star size={10} className="fill-amber-400 text-amber-400" />
-                  <span className="text-amber-400 text-xs font-semibold">{pro.rating.toFixed(1)}</span>
-                  <span className="text-xs" style={{ color: '#4B6080' }}>({pro.reviewCount})</span>
+                  <Star size={10} style={{ fill: '#E87830', color: '#E87830' }} />
+                  <span className="text-xs font-semibold" style={{ color: '#E87830' }}>
+                    {pro.rating.toFixed(1)}
+                  </span>
+                  <span className="text-xs" style={{ color: '#3D5270' }}>({pro.reviewCount})</span>
                 </div>
               )}
             </div>
           </div>
 
           {pro.location && (
-            <div className="flex items-center gap-1.5 mt-2.5 text-xs" style={{ color: '#5C7A9E' }}>
+            <div className="flex items-center gap-1.5 mt-2.5 text-xs" style={{ color: '#4A6480' }}>
               <MapPin size={11} />
               <span className="truncate">{pro.location}</span>
             </div>
           )}
 
-          {/* Services pills */}
+          {/* Service pills */}
           {pro.services.length > 0 ? (
             <div className="flex flex-wrap gap-1.5 mt-3">
               {pro.services.slice(0, 3).map(s => (
-                <span key={s.id}
-                  className="text-xs px-2 py-0.5 rounded-full font-medium"
-                  style={{ background: 'rgba(75,45,127,0.35)', border: '1px solid rgba(75,45,127,0.6)', color: '#C4A0F0' }}>
+                <span key={s.id} className="text-xs px-2 py-0.5 rounded-full font-medium"
+                  style={{
+                    background: 'rgba(14,122,140,0.2)',
+                    border: '1px solid rgba(14,122,140,0.4)',
+                    color: '#5BBFCC',
+                  }}>
                   {s.name}
                 </span>
               ))}
               {pro.services.length > 3 && (
-                <span className="text-xs px-2 py-0.5 rounded-full" style={{ color: '#5C7A9E' }}>
+                <span className="text-xs px-2 py-0.5 rounded-full" style={{ color: '#3D5270' }}>
                   +{pro.services.length - 3}
                 </span>
               )}
             </div>
           ) : (
-            <div className="flex items-center gap-1.5 mt-3 text-xs" style={{ color: '#3D5270' }}>
+            <div className="flex items-center gap-1.5 mt-3 text-xs" style={{ color: '#2D3F55' }}>
               <Scissors size={11} />
               <span>Services coming soon</span>
             </div>
           )}
 
-          {/* Book button */}
+          {/* CTA button — gold gradient */}
           <button
-            className="w-full mt-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-all duration-200 hover:opacity-90 group-hover:shadow-lg"
-            style={{ background: 'linear-gradient(135deg, #1A6FD4, #E83592)' }}>
+            className="w-full mt-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 hover:opacity-90 group-hover:shadow-lg"
+            style={{
+              background: 'linear-gradient(135deg, #B8860B, #D4A843, #E0BC5E)',
+              color: '#0F1628',
+            }}>
             View & Book
           </button>
         </div>
